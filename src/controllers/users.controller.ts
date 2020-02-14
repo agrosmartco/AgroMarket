@@ -19,6 +19,8 @@ import {
 } from '@loopback/rest';
 import {Users} from '../models';
 import {UsersRepository} from '../repositories';
+import jwt from 'jsonwebtoken';
+import {hashPassword} from "../services/hash.password.bcryptjs";
 
 export class UsersController {
   constructor(
@@ -33,7 +35,7 @@ export class UsersController {
         content: {'application/json': {schema:getModelSchemaRef(Users)}},
       },
     },
-  })
+  }) 
   async create(
     @requestBody({
       content: {
@@ -46,8 +48,13 @@ export class UsersController {
       },
     })
     users: Omit<Users, 'id'>,
-  ): Promise<Users> {
-    return this.usersRepository.create(users);
+  ): Promise<any> { 
+    //Saving a new user  
+     users.password = await hashPassword(users.password,10); 
+    const savedUser = await this.usersRepository.create(users); 
+    //Token
+    const token:string = jwt.sign({_id:savedUser.id},process.env.TOKEN_SECRET || 'tokentest')
+    return token;
   }
 
   @get('/users/count', {

@@ -1,9 +1,11 @@
 import {AgroMarketApplication} from './application';
 import {ApplicationConfig} from '@loopback/core';
+import dotenv from 'dotenv';
 
 export {AgroMarketApplication};
 
 export async function main(options: ApplicationConfig = {}) {
+  dotenv.config();
   const app = new AgroMarketApplication(options);
   await app.boot();
   await app.start();

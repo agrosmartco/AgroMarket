@@ -39,6 +39,8 @@
     "!*/__tests__"
   ],
   "dependencies": {
+    "@loopback/authentication": "^3.3.3",
+    "@loopback/authorization": "^0.4.10",
     "@loopback/boot": "^1.7.4",
     "@loopback/context": "^2.1.1",
     "@loopback/core": "^1.12.4",
@@ -46,12 +48,16 @@
     "@loopback/repository": "^1.19.1",
     "@loopback/rest": "^2.0.0",
     "@loopback/rest-explorer": "^1.4.10",
+    "@loopback/security": "^0.1.13",
     "@loopback/service-proxy": "^1.3.17",
     "@types/bcryptjs": "^2.4.2",
     "@types/dotenv": "^8.2.0",
+    "@types/lodash": "^4.14.149",
     "bcryptjs": "^2.4.3",
     "dotenv": "^8.2.0",
+    "isemail": "^3.2.0",
     "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.15",
     "loopback-connector-mongodb": "^4.2.0",
     "loopback-connector-postgresql": "^3.8.1"
   },

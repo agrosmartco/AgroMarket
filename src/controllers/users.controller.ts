@@ -17,25 +17,41 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import {Users} from '../models';
-import {UsersRepository} from '../repositories';
-import jwt from 'jsonwebtoken';
-import {hashPassword} from "../services/hash.password.bcryptjs";
+import {
+  authenticate,
+  TokenService,
+  UserService,
+} from '@loopback/authentication';
+import { authorize } from '@loopback/authorization';
+import { Users } from '../models';
+import { UsersRepository } from '../repositories';
+import { hashPassword, comparePassword } from "../services/hash.password.bcryptjs";
+import { jwtToken } from "../services/jwt-auth";
+import { validateCredentials } from "../services/validator";
+import { basicAuthorization } from '../services/authorizer';
+import { Credentials } from '../repositories/users.repository';
+import {
+  CredentialsRequestBody,
+} from './specs/user-controller.specs';
+import _ from "lodash";
+import { MyUserService } from '../services/user-service';
 
 export class UsersController {
   constructor(
     @repository(UsersRepository)
-    public usersRepository : UsersRepository,
-  ) {}
+    public usersRepository: UsersRepository,
+    // @inject(UserServiceBindings.USER_SERVICE)
+    // public userService: UserService<Users, Credentials>
+  ) { }
 
   @post('/users', {
     responses: {
       '200': {
         description: 'Users model instance',
-        content: {'application/json': {schema:getModelSchemaRef(Users)}},
+        content: { 'application/json': { schema: getModelSchemaRef(Users) } },
       },
     },
-  }) 
+  })
   async create(
     @requestBody({
       content: {
@@ -48,20 +64,27 @@ export class UsersController {
       },
     })
     users: Omit<Users, 'id'>,
-  ): Promise<any> { 
-    //Saving a new user  
-     users.password = await hashPassword(users.password,10); 
-    const savedUser = await this.usersRepository.create(users); 
+  ): Promise<any> {
+    console.log(users);
+
+    // All new users have the "customer" role by default
+    users.roles = ['customer'];
+    //Validate email
+    await validateCredentials(_.pick(users, ['email', 'password']))
+    //Encryp pass
+    users.password = await hashPassword(users.password, 10);
+    //Saving a new user      
+    const savedUser = await this.usersRepository.create(users);
     //Token
-    const token:string = jwt.sign({_id:savedUser.id},process.env.TOKEN_SECRET || 'tokentest')
-    return token;
+    const token: string = await jwtToken(savedUser.id)
+    return { token };
   }
 
   @get('/users/count', {
     responses: {
       '200': {
         description: 'Users model count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -79,7 +102,7 @@ export class UsersController {
           'application/json': {
             schema: {
               type: 'array',
-              items: getModelSchemaRef(Users, {includeRelations: true}),
+              items: getModelSchemaRef(Users, { includeRelations: true }),
             },
           },
         },
@@ -96,7 +119,7 @@ export class UsersController {
     responses: {
       '200': {
         description: 'Users PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -104,7 +127,7 @@ export class UsersController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Users, {partial: true}),
+          schema: getModelSchemaRef(Users, { partial: true }),
         },
       },
     })
@@ -120,14 +143,18 @@ export class UsersController {
         description: 'Users model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(Users, {includeRelations: true}),
+            schema: getModelSchemaRef(Users, { includeRelations: true }),
           },
         },
       },
     },
   })
+  @authorize({
+    allowedRoles: ['admin', 'support', 'customer'],
+    voters: [basicAuthorization],
+  })
   async findById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @param.query.object('filter', getFilterSchemaFor(Users)) filter?: Filter<Users>
   ): Promise<Users> {
     return this.usersRepository.findById(id, filter);
@@ -141,11 +168,11 @@ export class UsersController {
     },
   })
   async updateById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Users, {partial: true}),
+          schema: getModelSchemaRef(Users, { partial: true }),
         },
       },
     })
@@ -161,8 +188,12 @@ export class UsersController {
       },
     },
   })
+  @authorize({
+    allowedRoles: ['admin', 'customer'],
+    voters: [basicAuthorization],
+  })
   async replaceById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody() users: Users,
   ): Promise<void> {
     await this.usersRepository.replaceById(id, users);
@@ -175,7 +206,46 @@ export class UsersController {
       },
     },
   })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.usersRepository.deleteById(id);
   }
+
+  @post('/users/login', {
+    responses: {
+      '200': {
+        description: 'Token',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                token: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async login(
+    @requestBody(CredentialsRequestBody) credentials: Credentials,
+  ): Promise<{ token: string }> {
+    // ensure the user exists, and the password is correct
+    const user = await MyUserService.prototype.verifyCredentials(credentials);
+
+    //Compare pass
+    const correctPassword: boolean = await comparePassword(credentials.password, user.password);
+
+    // // convert a User object into a UserProfile object (reduced set of properties)
+    // const userProfile = this.userService.convertToUserProfile(user);
+
+    // create a JSON Web Token based on the user profile
+    const token = await jwtToken(Users);
+
+    return { token };
+  }
+
+
 }

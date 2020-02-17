@@ -1,44 +1,36 @@
-import { UsersRepository } from '../repositories';
 import { repository } from '@loopback/repository';
 import { HttpErrors } from '@loopback/rest';
-import {Credentials} from '../repositories/users.repository';
+import { Credentials, UsersRepository } from '../repositories/users.repository';
 import { Users } from '../models';
-
+import { comparePassword } from '../services/hash.password.bcryptjs';
 
 export class MyUserService {
 
-    constructor(@repository(UsersRepository) public userRepository: UsersRepository) {
+    constructor(
+        @repository(UsersRepository)
+        public usersRepository: UsersRepository) {
 
     }
 
-    async  verifyCredentials(credentials: Credentials): Promise<Users> {
-        console.log(credentials);
-        
+    async  verifyCredentials(credentials: Credentials, userFind: any): Promise<Users> {
+
         const invalidCredentialsError = 'Invalid email or password.';
 
-        const foundUser = await this.userRepository.findOne({
-            where: { email: credentials.email },
-        });
-        if (!foundUser) {
+        if (!userFind) {
+
             throw new HttpErrors.Unauthorized(invalidCredentialsError);
+
+        }
+        
+        const correctPassword: boolean = await comparePassword(credentials.password, userFind.password);
+
+        if (!correctPassword) {
+
+            throw new HttpErrors.Unauthorized(invalidCredentialsError);
+
         }
 
-        const credentialsFound = await this.userRepository.findCredentials(
-            foundUser.id,
-        );
-        if (!credentialsFound) {
-            throw new HttpErrors.Unauthorized(invalidCredentialsError);
-        }
-
-        // const passwordMatched = await this.passwordHasher.comparePassword(
-        //     credentials.password,
-        //     credentialsFound.password,
-        // );
-
-        // if (!passwordMatched) {
-        //     throw new HttpErrors.Unauthorized(invalidCredentialsError);
-        // }
-
-        return foundUser;
+        return userFind;
+        ;
     }
 }

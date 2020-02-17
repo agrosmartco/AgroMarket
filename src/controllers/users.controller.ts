@@ -22,11 +22,12 @@ import {
   TokenService,
   UserService,
 } from '@loopback/authentication';
+import { HttpErrors } from '@loopback/rest';
 import { authorize } from '@loopback/authorization';
 import { Users } from '../models';
 import { UsersRepository } from '../repositories';
-import { hashPassword, comparePassword } from "../services/hash.password.bcryptjs";
-import { jwtToken } from "../services/jwt-auth";
+import { hashPassword } from "../services/hash.password.bcryptjs";
+import { generateToken } from "../services/jwt-auth";
 import { validateCredentials } from "../services/validator";
 import { basicAuthorization } from '../services/authorizer';
 import { Credentials } from '../repositories/users.repository';
@@ -34,14 +35,14 @@ import {
   CredentialsRequestBody,
 } from './specs/user-controller.specs';
 import _ from "lodash";
+import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
 import { MyUserService } from '../services/user-service';
+
 
 export class UsersController {
   constructor(
     @repository(UsersRepository)
     public usersRepository: UsersRepository,
-    // @inject(UserServiceBindings.USER_SERVICE)
-    // public userService: UserService<Users, Credentials>
   ) { }
 
   @post('/users', {
@@ -65,7 +66,6 @@ export class UsersController {
     })
     users: Omit<Users, 'id'>,
   ): Promise<any> {
-    console.log(users);
 
     // All new users have the "customer" role by default
     users.roles = ['customer'];
@@ -73,11 +73,28 @@ export class UsersController {
     await validateCredentials(_.pick(users, ['email', 'password']))
     //Encryp pass
     users.password = await hashPassword(users.password, 10);
-    //Saving a new user      
-    const savedUser = await this.usersRepository.create(users);
-    //Token
-    const token: string = await jwtToken(savedUser.id)
-    return { token };
+
+    try {
+
+      //Saving a new user      
+      const savedUser = await this.usersRepository.create(users);
+
+      //Token
+      const token: string = await generateToken(savedUser.id);
+
+      return { token };
+
+    } catch (error) {
+
+      // MongoError 11000 duplicate key
+      if (error.code === 11000 && error.errmsg.includes('index: uniqueEmail')) {
+        throw new HttpErrors.Conflict('Email value is already taken');
+      } else {
+        throw error;
+      }
+
+    }
+
   }
 
   @get('/users/count', {
@@ -138,6 +155,7 @@ export class UsersController {
   }
 
   @get('/users/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Users model instance',
@@ -149,12 +167,9 @@ export class UsersController {
       },
     },
   })
-  @authorize({
-    allowedRoles: ['admin', 'support', 'customer'],
-    voters: [basicAuthorization],
-  })
+  @authenticate('jwt')
   async findById(
-    @param.path.number('id') id: string,
+    @param.path.string('id') id: string,
     @param.query.object('filter', getFilterSchemaFor(Users)) filter?: Filter<Users>
   ): Promise<Users> {
     return this.usersRepository.findById(id, filter);
@@ -168,7 +183,7 @@ export class UsersController {
     },
   })
   async updateById(
-    @param.path.number('id') id: string,
+    @param.path.string('id') id: string,
     @requestBody({
       content: {
         'application/json': {
@@ -193,7 +208,7 @@ export class UsersController {
     voters: [basicAuthorization],
   })
   async replaceById(
-    @param.path.number('id') id: string,
+    @param.path.string('id') id: string,
     @requestBody() users: Users,
   ): Promise<void> {
     await this.usersRepository.replaceById(id, users);
@@ -232,17 +247,16 @@ export class UsersController {
   async login(
     @requestBody(CredentialsRequestBody) credentials: Credentials,
   ): Promise<{ token: string }> {
+
+    var userFind = await this.usersRepository.findOne({
+      where: { email: credentials.email },
+    });
+
     // ensure the user exists, and the password is correct
-    const user = await MyUserService.prototype.verifyCredentials(credentials);
-
-    //Compare pass
-    const correctPassword: boolean = await comparePassword(credentials.password, user.password);
-
-    // // convert a User object into a UserProfile object (reduced set of properties)
-    // const userProfile = this.userService.convertToUserProfile(user);
+    const userValid = await MyUserService.prototype.verifyCredentials(credentials, userFind);
 
     // create a JSON Web Token based on the user profile
-    const token = await jwtToken(Users);
+    const token = await generateToken(userValid.password);
 
     return { token };
   }

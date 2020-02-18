@@ -25,10 +25,3 @@ export async function validateToken(
 
     return payload
 }
-
-
-export async function authenticate(request: Request) {
-    const token=request.body.authToken;
-    const payload =  jwt.verify(token,process.env.TOKEN_SECRET || 'tokentest')
-    return payload;
-  }

@@ -1,49 +1,39 @@
 
 import { HttpErrors, Request } from '@loopback/rest';
-import { AuthenticationStrategy, TokenService } from '@loopback/authentication';
+import { AuthenticationStrategy } from '@loopback/authentication';
 import jwt from 'jsonwebtoken';
 
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
-    name = 'jwt';
 
+    name = 'jwt';
 
     constructor(
     ) { }
 
     authenticate(request: Request): any {
-        var token:string|any = request.headers.authtoken;
-        console.log(token);
-        
-        const payload = jwt.verify(token, process.env.TOKEN_SECRET || 'tokentest')
-        
-        return payload;
-    }
 
-    extractCredentials(request: Request): string {
-        if (!request.headers.authorization) {
-            throw new HttpErrors.Unauthorized(`Authorization header not found.`);
-        }
+        var token: string | any = request.headers.authtoken;
 
-        // for example : Bearer xxx.yyy.zzz
-        const authHeaderValue = request.headers.authorization;
+        if (!token) {
 
-        if (!authHeaderValue.startsWith('Bearer')) {
             throw new HttpErrors.Unauthorized(
-                `Authorization header is not of type 'Bearer'.`,
+                `Error verifying token : 'token' is null`,
             );
         }
 
-        //split the string into 2 parts : 'Bearer ' and the `xxx.yyy.zzz`
-        const parts = authHeaderValue.split(' ');
-        if (parts.length !== 2)
-            throw new HttpErrors.Unauthorized(
-                `Authorization header value has too many parts. It must follow the pattern: 'Bearer xx.yy.zz' where xx.yy.zz is a valid JWT token.`,
-            );
-        const token = parts[1];
+        try {
 
-        return token;
+            const payload = jwt.verify(token, process.env.TOKEN_SECRET || 'tokentest')
+
+            return payload;
+            
+        } catch (error) {
+
+                throw new HttpErrors.Unauthorized(
+                    `Error verifying token : invalid token `+ error,
+                );   
+        }
     }
-
 
 }

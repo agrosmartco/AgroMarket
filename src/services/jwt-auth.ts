@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { HttpErrors, Request } from '@loopback/rest';
+import { HttpErrors } from '@loopback/rest';
 
 
 export async function generateToken(
@@ -25,10 +25,3 @@ export async function validateToken(
 
     return payload
 }
-
-
-export async function authenticate(request: Request) {
-    const token=request.body.authToken;
-    const payload =  jwt.verify(token,process.env.TOKEN_SECRET || 'tokentest')
-    return payload;
-  }

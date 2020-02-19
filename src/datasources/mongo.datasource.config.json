@@ -7,5 +7,6 @@
   "user": "",
   "password": "",
   "database": "agromarket",
-  "useNewUrlParser": true
+  "useNewUrlParser": true,
+  "useUnifiedTopology": true
 }

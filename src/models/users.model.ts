@@ -1,12 +1,26 @@
-import {Entity, model, property} from '@loopback/repository';
+import { Entity, model, property } from '@loopback/repository';
+import {UserCredentials} from './user-credentials.model';
 
-@model()
+@model({
+  settings: {
+    indexes: {
+      uniqueEmail: {
+        keys: {
+          email: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
+  },
+})
 export class Users extends Entity {
   @property({
     type: 'string',
     required: true,
   })
-  name: string;
+  firstName: string;
 
   @property({
     type: 'string',
@@ -23,20 +37,25 @@ export class Users extends Entity {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      minLength: 10,
-      }
   })
   password: string;
 
   @property({
-    type: 'number',
+    type: 'array',
+    itemType: 'string',
+  })
+  roles?: string[];
+
+  @property({
+    type: 'string',
     id: true,
     generated: true,
 
   })
-  id?: number;
+  id?: string;
 
+  // @hasOne(() => UserCredentials)
+  // userCredentials: UserCredentials;
 
   constructor(data?: Partial<Users>) {
     super(data);

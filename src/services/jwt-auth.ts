@@ -22,6 +22,6 @@ export async function validateToken(
     }
 
    const payload =  jwt.verify(token,process.env.TOKEN_SECRET || 'tokentest')
-
+ 
     return payload
 }

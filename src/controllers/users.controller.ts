@@ -18,9 +18,7 @@ import {
   requestBody,
 } from '@loopback/rest';
 import {
-  authenticate,
-  TokenService,
-  UserService,
+  authenticate
 } from '@loopback/authentication';
 import { HttpErrors } from '@loopback/rest';
 import { authorize } from '@loopback/authorization';
@@ -35,7 +33,7 @@ import {
   CredentialsRequestBody,
 } from './specs/user-controller.specs';
 import _ from "lodash";
-import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
+import { OPERATION_SECURITY_SPEC } from '../utils/security-spec';
 import { MyUserService } from '../services/user-service';
 
 
@@ -80,7 +78,7 @@ export class UsersController {
       const savedUser = await this.usersRepository.create(users);
 
       //Token
-      const token: string = await generateToken(savedUser.id);
+      const token: string = await generateToken(savedUser.id,savedUser.roles);
 
       return { token };
 
@@ -168,6 +166,10 @@ export class UsersController {
     },
   })
   @authenticate('jwt')
+  @authorize({
+    allowedRoles: ['customer','admin'],
+    voters: [basicAuthorization],
+  })
   async findById(
     @param.path.string('id') id: string,
     @param.query.object('filter', getFilterSchemaFor(Users)) filter?: Filter<Users>
@@ -256,7 +258,7 @@ export class UsersController {
     const userValid = await MyUserService.prototype.verifyCredentials(credentials, userFind);
 
     // create a JSON Web Token based on the user profile
-    const token = await generateToken(userValid.password);
+    const token = await generateToken(userValid.password,userFind?.roles);
 
     return { token };
   }

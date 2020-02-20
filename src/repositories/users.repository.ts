@@ -1,6 +1,5 @@
 import { DefaultCrudRepository, HasOneRepositoryFactory, juggler, repository } from '@loopback/repository';
 import { Users, UsersRelations } from '../models';
-import { MongoDataSource } from '../datasources';
 import { inject, Getter } from '@loopback/core';
 
 export type Credentials = {

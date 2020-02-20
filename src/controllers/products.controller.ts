@@ -158,9 +158,10 @@ export class ProductsController {
     @param.path.number('id') id: number,
     @requestBody() products: Products,
   ): Promise<void> {
+  
     await this.productsRepository.replaceById(id, products);
   }
-
+  
   @del('/products/{id}', {
     responses: {
       '204': {

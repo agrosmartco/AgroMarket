@@ -31,7 +31,7 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
         } catch (error) {
 
                 throw new HttpErrors.Unauthorized(
-                    `Error verifying token : invalid token `+ error,
+                    `Error verifying token : invalid token -`+ error,
                 );   
         }
     }

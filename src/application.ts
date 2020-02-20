@@ -9,6 +9,7 @@ import { RestApplication } from '@loopback/rest';
 import { ServiceMixin } from '@loopback/service-proxy';
 import path from 'path';
 import { MySequence } from './sequence';
+import {AuthorizationComponent} from '@loopback/authorization';
 import { AuthenticationComponent, registerAuthenticationStrategy, } from '@loopback/authentication';
 import { JWTAuthenticationStrategy } from './authentication-strategies/jwt-strategy';
 import { SECURITY_SCHEME_SPEC } from './utils/security-spec';
@@ -57,9 +58,11 @@ export class AgroMarketApplication extends BootMixin(
 
     // Bind authentication component related elements
     this.component(AuthenticationComponent);
+    this.component(AuthorizationComponent);
 
     // authentication
     registerAuthenticationStrategy(this, JWTAuthenticationStrategy);
+    
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here

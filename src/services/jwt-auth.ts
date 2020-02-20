@@ -3,10 +3,11 @@ import { HttpErrors } from '@loopback/rest';
 
 
 export async function generateToken(
-    id: any
+    id: any,
+    roles:any
 ): Promise<string> {
 
-    return jwt.sign({ _id: id }, process.env.TOKEN_SECRET || 'tokentest', {
+    return jwt.sign({ _id: id,roles:roles}, process.env.TOKEN_SECRET || 'tokentest', {
         expiresIn: 60 * 60 * 24
     })
 }

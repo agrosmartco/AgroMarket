@@ -18,6 +18,12 @@ import {
   requestBody,
 } from '@loopback/rest';
 import {Products} from '../models';
+import { basicAuthorization } from '../services/authorizer';
+import { authorize } from '@loopback/authorization';
+import { OPERATION_SECURITY_SPEC } from '../utils/security-spec';
+import {
+  authenticate
+} from '@loopback/authentication';
 import {ProductsRepository} from '../repositories';
 
 export class ProductsController {
@@ -33,6 +39,11 @@ export class ProductsController {
         content: {'application/json': {schema: getModelSchemaRef(Products)}},
       },
     },
+  })
+  @authenticate('jwt')
+  @authorize({
+    allowedRoles: ['admin'],
+    voters: [basicAuthorization],
   })
   async create(
     @requestBody({
@@ -154,6 +165,11 @@ export class ProductsController {
       },
     },
   })
+  @authenticate('jwt')
+  @authorize({
+    allowedRoles: ['admin'],
+    voters: [basicAuthorization],
+  })
   async replaceById(
     @param.path.number('id') id: number,
     @requestBody() products: Products,
@@ -168,6 +184,11 @@ export class ProductsController {
         description: 'Products DELETE success',
       },
     },
+  })
+  @authenticate('jwt')
+  @authorize({
+    allowedRoles: ['admin'],
+    voters: [basicAuthorization],
   })
   async deleteById(@param.path.number('id') id: number): Promise<void> {
     await this.productsRepository.deleteById(id);

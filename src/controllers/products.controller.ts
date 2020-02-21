@@ -17,26 +17,26 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import {Products} from '../models';
+import { Products } from '../models';
 import { basicAuthorization } from '../services/authorizer';
 import { authorize } from '@loopback/authorization';
 import { OPERATION_SECURITY_SPEC } from '../utils/security-spec';
 import {
   authenticate
 } from '@loopback/authentication';
-import {ProductsRepository} from '../repositories';
+import { ProductsRepository } from '../repositories';
 
 export class ProductsController {
   constructor(
     @repository(ProductsRepository)
-    public productsRepository : ProductsRepository,
-  ) {}
+    public productsRepository: ProductsRepository,
+  ) { }
 
   @post('/products', {
     responses: {
       '200': {
         description: 'Products model instance',
-        content: {'application/json': {schema: getModelSchemaRef(Products)}},
+        content: { 'application/json': { schema: getModelSchemaRef(Products) } },
       },
     },
   })
@@ -65,7 +65,7 @@ export class ProductsController {
     responses: {
       '200': {
         description: 'Products model count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -83,7 +83,7 @@ export class ProductsController {
           'application/json': {
             schema: {
               type: 'array',
-              items: getModelSchemaRef(Products, {includeRelations: true}),
+              items: getModelSchemaRef(Products, { includeRelations: true }),
             },
           },
         },
@@ -100,7 +100,7 @@ export class ProductsController {
     responses: {
       '200': {
         description: 'Products PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -108,7 +108,7 @@ export class ProductsController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Products, {partial: true}),
+          schema: getModelSchemaRef(Products, { partial: true }),
         },
       },
     })
@@ -124,7 +124,7 @@ export class ProductsController {
         description: 'Products model instance',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(Products, {includeRelations: true}),
+            schema: getModelSchemaRef(Products, { includeRelations: true }),
           },
         },
       },
@@ -149,7 +149,7 @@ export class ProductsController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Products, {partial: true}),
+          schema: getModelSchemaRef(Products, { partial: true }),
         },
       },
     })
@@ -174,10 +174,10 @@ export class ProductsController {
     @param.path.number('id') id: number,
     @requestBody() products: Products,
   ): Promise<void> {
-  
+
     await this.productsRepository.replaceById(id, products);
   }
-  
+
   @del('/products/{id}', {
     responses: {
       '204': {

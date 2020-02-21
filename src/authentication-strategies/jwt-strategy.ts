@@ -13,7 +13,10 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
 
     authenticate(request: Request): any {
 
-        var token: string | any = request.headers.authtoken;
+        var token: string | any = request.headers.authorization;
+
+        console.log(token);
+        
 
         if (!token) {
 
